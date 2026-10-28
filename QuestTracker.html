@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuestTracker — Daily Dashboard</title>
+<style>
+:root{--bg:#0b0f14;--panel:#121821;--panel2:#1a2230;--fg:#e6edf3;--muted:#9aa7b8;--accent:#4ade80;--accent2:#60a5fa;--gold:#fbbf24;--danger:#f87171;--xp:#a78bfa;--border:#263040;--radius:12px}
+*{box-sizing:border-box}body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--fg);line-height:1.5}
+.container{max-width:900px;margin:0 auto;padding:20px}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-weight:800;color:#0b0f14}
+h1{margin:0;font-size:20px} .subtitle{color:var(--muted);font-size:12px;margin-top:2px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin:14px 0}
+.card h2{margin:0 0 8px;font-size:17px;color:var(--accent)}
+.card h3{margin:10px 0 6px;font-size:14px;color:var(--accent2)}
+.row{display:flex;gap:10px;flex-wrap:wrap}.col{flex:1;min-width:160px}
+.stat{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px}
+.stat .label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+.stat .value{font-size:20px;font-weight:700;margin-top:2px}
+.bar{height:10px;background:#0b0f14;border:1px solid var(--border);border-radius:999px;overflow:hidden;margin-top:6px}
+.bar>div{height:100%;background:linear-gradient(90deg,var(--xp),var(--accent));transition:width .4s}
+.btn{background:var(--accent);color:#0b0f14;border:none;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px}
+.btn.secondary{background:var(--panel2);color:var(--fg);border:1px solid var(--border)}
+.btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn.danger{background:var(--danger);color:#0b0f14}
+.btn:hover{filter:brightness(1.1)}
+.chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;border:1px solid var(--border);color:var(--muted);margin-right:4px}
+.chip.green{color:var(--accent);border-color:var(--accent)} .chip.gold{color:var(--gold);border-color:var(--gold)} .chip.blue{color:var(--accent2);border-color:var(--accent2)}
+input,textarea,select{background:var(--panel2);color:var(--fg);border:1px solid var(--border);border-radius:8px;padding:8px;font-size:13px;width:100%}
+textarea{min-height:60px;resize:vertical}
+.habit{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.habit:last-child{border-bottom:none}
+.habit input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+.habit .htext{flex:1;font-size:14px}
+.habit .hdel{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px}
+.timer{font-size:48px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;margin:8px 0}
+.timerlabel{text-align:center;color:var(--muted);font-size:12px;margin-bottom:8px}
+.addrow{display:flex;gap:8px;margin-top:8px}
+.footer{color:var(--muted);font-size:12px;text-align:center;padding:20px 0;border-top:1px solid var(--border);margin-top:20px}
+@media(max-width:600px){.container{padding:12px}.timer{font-size:36px}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <div class="brand">
+    <div class="logo">QT</div>
+    <div><h1>QuestTracker — Daily Dashboard</h1><div class="subtitle">Habits, Pomodoro, XP, streaks. Saves locally. Separate from WorkQuest.</div></div>
+  </div>
+  <button class="btn ghost" onclick="resetAll()">Reset</button>
+</header>
+
+<div class="card">
+  <h2>Character</h2>
+  <div class="row">
+    <div class="col"><div class="stat"><div class="label">Level</div><div class="value" id="level">1</div></div></div>
+    <div class="col"><div class="stat"><div class="label">XP</div><div class="value" id="xp">0 / 100</div><div class="bar"><div id="xpbar" style="width:0%"></div></div></div></div>
+    <div class="col"><div class="stat"><div class="label">Streak</div><div class="value" id="streak">0 🔥</div></div></div>
+    <div class="col"><div class="stat"><div class="label">Today Done</div><div class="value" id="todaydone">0</div></div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Today's Quest</h2>
+  <p style="color:var(--muted);font-size:13px;margin:0 0 8px">One focus for today. Write it, do it, check it off.</p>
+  <input id="todayquest" placeholder="e.g. Ship the landing page draft" oninput="saveState()" />
+  <div style="margin-top:8px;display:flex;gap:8px">
+    <button class="btn" onclick="completeTodayQuest()">Complete Today's Quest (+25 XP)</button>
+    <span class="chip gold" id="tqstatus"></span>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Pomodoro Timer</h2>
+  <div class="timerlabel" id="timerlabel">Work session — 25:00</div>
+  <div class="timer" id="timer">25:00</div>
+  <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+    <button class="btn" onclick="startTimer(25,'work')">Start 25m Work</button>
+    <button class="btn secondary" onclick="startTimer(5,'break')">Start 5m Break</button>
+    <button class="btn ghost" onclick="pauseTimer()">Pause</button>
+    <button class="btn ghost" onclick="resetTimer()">Reset</button>
+  </div>
+  <p style="color:var(--muted);font-size:12px;margin-top:8px;text-align:center">Completing a work session grants +10 XP.</p>
+</div>
+
+<div class="card">
+  <h2>Daily Habits</h2>
+  <div id="habits"></div>
+  <div class="addrow">
+    <input id="newhabit" placeholder="Add a habit (e.g. 30 min coding)" />
+    <button class="btn" onclick="addHabit()">Add</button>
+  </div>
+  <p style="color:var(--muted);font-size:12px;margin-top:8px">Check all habits to bank +15 XP for the day (once per day).</p>
+  <button class="btn secondary" onclick="bankHabits()">Bank Today's Habits (+15 XP)</button>
+</div>
+
+<div class="card">
+  <h2>Weekly Goal</h2>
+  <input id="weeklygoal" placeholder="e.g. Land 1 paying client by Friday" oninput="saveState()" />
+  <textarea id="weeklynotes" placeholder="Notes / blockers / wins this week..." oninput="saveState()"></textarea>
+  <div style="margin-top:8px"><button class="btn secondary" onclick="resetWeekly()">New Week (keep XP)</button></div>
+</div>
+
+<div class="footer">QuestTracker — saves in your browser (localStorage key: qt_state). No data leaves your machine.</div>
+</div>
+
+<script>
+const KEY='qt_state';
+let state=JSON.parse(localStorage.getItem(KEY)||'{}');
+if(!state.xp) state={xp:0,level:1,streak:0,lastDay:null,habits:[],todayquest:'',todayquestDone:false,weeklygoal:'',weeklynotes:'',bankedDay:null,habitChecks:{}};
+if(!state.habits) state.habits=['30 min learning','Ship something small','Reach out to 1 person'];
+if(!state.habitChecks) state.habitChecks={};
+
+function todayKey(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+
+function saveState(){localStorage.setItem(KEY,JSON.stringify(state));render();}
+
+function xpForLevel(l){return l*100;}
+function addXP(n){state.xp+=n;while(state.xp>=xpForLevel(state.level)){state.xp-=xpForLevel(state.level);state.level++;}saveState();}
+
+function updateStreak(){
+  const t=todayKey();
+  if(state.lastDay===t) return;
+  if(state.lastDay){
+    const prev=new Date(state.lastDay);const now=new Date(t);
+    const diff=(now-prev)/(1000*60*60*24);
+    if(diff<=1.5){state.streak=(state.streak||0)+1;}else{state.streak=1;}
+  } else {state.streak=1;}
+  state.lastDay=t;
+}
+
+function render(){
+  document.getElementById('level').textContent=state.level;
+  document.getElementById('xp').textContent=state.xp+' / '+xpForLevel(state.level);
+  document.getElementById('xpbar').style.width=(state.xp/xpForLevel(state.level)*100)+'%';
+  document.getElementById('streak').textContent=(state.streak||0)+' 🔥';
+  // habits
+  const t=todayKey();
+  if(!state.habitChecks[t]) state.habitChecks[t]={};
+  const checks=state.habitChecks[t];
+  const box=document.getElementById('habits'); box.innerHTML='';
+  let doneCount=0;
+  state.habits.forEach((h,i)=>{
+    const checked=!!checks[i];
+    if(checked) doneCount++;
+    const d=document.createElement('div'); d.className='habit';
+    d.innerHTML=`<input type="checkbox" ${checked?'checked':''} onchange="toggleHabit(${i},this.checked)" />
+      <span class="htext">${escapeHtml(h)}</span>
+      <button class="hdel" onclick="delHabit(${i})" title="remove">×</button>`;
+    box.appendChild(d);
+  });
+  document.getElementById('todaydone').textContent=doneCount+'/'+state.habits.length;
+  document.getElementById('todayquest').value=state.todayquest||'';
+  document.getElementById('weeklygoal').value=state.weeklygoal||'';
+  document.getElementById('weeklynotes').value=state.weeklynotes||'';
+  document.getElementById('tqstatus').textContent=state.todayquestDone?'Done ✓':'';
+}
+
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function toggleHabit(i,v){const t=todayKey(); if(!state.habitChecks[t]) state.habitChecks[t]={}; state.habitChecks[t][i]=v; saveState();}
+
+function addHabit(){const v=document.getElementById('newhabit').value.trim(); if(!v) return; state.habits.push(v); document.getElementById('newhabit').value=''; saveState();}
+function delHabit(i){state.habits.splice(i,1); saveState();}
+
+function completeTodayQuest(){
+  if(state.todayquestDone) return;
+  if(!(state.todayquest||'').trim()){alert('Write today\'s quest first.');return;}
+  state.todayquestDone=true; addXP(25); updateStreak(); saveState();
+}
+
+function bankHabits(){
+  const t=todayKey();
+  if(state.bankedDay===t){alert('Already banked today.');return;}
+  const checks=state.habitChecks[t]||{};
+  const all=state.habits.length>0 && state.habits.every((_,i)=>checks[i]);
+  if(!all){alert('Check all habits first.');return;}
+  state.bankedDay=t; addXP(15); updateStreak(); saveState();
+}
+
+function resetWeekly(){if(!confirm('Start a new week? (XP kept)')) return; state.weeklygoal=''; state.weeklynotes=''; state.todayquest=''; state.todayquestDone=false; saveState();}
+
+// Pomodoro
+let timerInterval=null, remaining=0, mode='idle';
+function fmt(s){const m=Math.floor(s/60),sec=s%60;return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');}
+function startTimer(mins,label){
+  clearInterval(timerInterval); remaining=mins*60; mode=label;
+  document.getElementById('timerlabel').textContent=(label==='work'?'Work session':'Break')+' — '+fmt(remaining);
+  timerInterval=setInterval(()=>{
+    remaining--; 
+    document.getElementById('timer').textContent=fmt(remaining);
+    if(remaining<=0){clearInterval(timerInterval);timerInterval=null;
+      if(mode==='work'){addXP(10);alert('Work session done! +10 XP');}
+      else alert('Break over.');
+      document.getElementById('timer').textContent='00:00';
+    }
+  },1000);
+  document.getElementById('timer').textContent=fmt(remaining);
+}
+function pauseTimer(){if(timerInterval){clearInterval(timerInterval);timerInterval=null;}else if(remaining>0){timerInterval=setInterval(()=>{remaining--;document.getElementById('timer').textContent=fmt(remaining);if(remaining<=0){clearInterval(timerInterval);timerInterval=null;if(mode==='work'){addXP(10);}document.getElementById('timer').textContent='00:00';}},1000);}}
+function resetTimer(){clearInterval(timerInterval);timerInterval=null;remaining=0;document.getElementById('timer').textContent='25:00';document.getElementById('timerlabel').textContent='Work session — 25:00';}
+
+function resetAll(){if(!confirm('Reset all QuestTracker progress?'))return;localStorage.removeItem(KEY);location.reload();}
+
+// init
+updateStreak();
+render();
+</script>
+</body>
+</html>

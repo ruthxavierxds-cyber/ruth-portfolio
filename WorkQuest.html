@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WorkQuest — Honorably Fast</title>
+<style>
+:root{
+  --bg:#0b0f14; --panel:#121821; --panel2:#1a2230; --fg:#e6edf3; --muted:#9aa7b8;
+  --accent:#4ade80; --accent2:#60a5fa; --gold:#fbbf24; --danger:#f87171; --xp:#a78bfa;
+  --border:#263040; --radius:12px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--fg);line-height:1.5}
+.container{max-width:1100px;margin:0 auto;padding:24px}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .logo{width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-weight:800;color:#0b0f14}
+h1{margin:0;font-size:22px;letter-spacing:.5px}
+.subtitle{color:var(--muted);font-size:13px;margin-top:2px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin:16px 0}
+.card h2{margin:0 0 8px;font-size:18px;color:var(--accent)}
+.card h3{margin:12px 0 6px;font-size:15px;color:var(--accent2)}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.col{flex:1;min-width:220px}
+.stat{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px}
+.stat .label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.6px}
+.stat .value{font-size:22px;font-weight:700;margin-top:4px}
+.bar{height:10px;background:#0b0f14;border:1px solid var(--border);border-radius:999px;overflow:hidden;margin-top:6px}
+.bar>div{height:100%;background:linear-gradient(90deg,var(--xp),var(--accent));transition:width .4s}
+.btn{background:var(--accent);color:#0b0f14;border:none;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px}
+.btn.secondary{background:var(--panel2);color:var(--fg);border:1px solid var(--border)}
+.btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn:hover{filter:brightness(1.1)}
+.chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;border:1px solid var(--border);color:var(--muted);margin-right:4px}
+.chip.green{color:var(--accent);border-color:var(--accent)}
+.chip.gold{color:var(--gold);border-color:var(--gold)}
+.chip.blue{color:var(--accent2);border-color:var(--accent2)}
+.chip.red{color:var(--danger);border-color:var(--danger)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.quest{position:relative}
+.quest.done{opacity:.6;border-color:var(--accent)}
+.quest .head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.quest .title{font-weight:700;font-size:15px}
+.quest .meta{color:var(--muted);font-size:12px;margin:4px 0}
+.quest ul{margin:6px 0 6px 18px;font-size:13px}
+.quest li{margin:3px 0}
+.quest .reward{color:var(--gold);font-size:12px;font-weight:600;margin-top:6px}
+.classpick{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}
+.classcard{background:var(--panel2);border:2px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;text-align:center}
+.classcard.selected{border-color:var(--accent);background:#16231a}
+.classcard .cname{font-weight:700;margin-bottom:4px}
+.classcard .cdesc{font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+.tab{padding:6px 12px;border-radius:8px;cursor:pointer;background:var(--panel2);border:1px solid var(--border);font-size:13px}
+.tab.active{background:var(--accent);color:#0b0f14;border-color:var(--accent)}
+.panel{display:none}
+.panel.active{display:block}
+.codebox{background:#0b0f14;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:ui-monospace,monospace;font-size:13px;white-space:pre-wrap}
+.honor li{margin:4px 0}
+.footer{color:var(--muted);font-size:12px;text-align:center;padding:24px 0;border-top:1px solid var(--border);margin-top:24px}
+@media(max-width:600px){.container{padding:12px}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <div class="brand">
+    <div class="logo">WQ</div>
+    <div>
+      <h1>WorkQuest — Honorably Fast</h1>
+      <div class="subtitle">A guided RPG for earning real money, safely and ethically. Progress saves locally.</div>
+    </div>
+  </div>
+  <button class="btn ghost" onclick="resetProgress()">Reset</button>
+</header>
+
+<!-- Character sheet -->
+<div class="card">
+  <h2>Character Sheet</h2>
+  <div class="row">
+    <div class="col">
+      <div class="stat"><div class="label">Level</div><div class="value" id="level">1</div></div>
+    </div>
+    <div class="col">
+      <div class="stat"><div class="label">XP</div><div class="value" id="xp">0 / 100</div><div class="bar"><div id="xpbar" style="width:0%"></div></div></div>
+    </div>
+    <div class="col">
+      <div class="stat"><div class="label">Honor</div><div class="value" id="honor">100</div><div class="bar"><div id="honorbar" style="width:100%;background:linear-gradient(90deg,#fbbf24,#4ade80)"></div></div></div>
+    </div>
+    <div class="col">
+      <div class="stat"><div class="label">Quests Done</div><div class="value" id="qdone">0</div></div>
+    </div>
+  </div>
+  <h3>Choose Your Class</h3>
+  <div class="classpick">
+    <div class="classcard" data-class="builder" onclick="pickClass('builder')"><div class="cname">Builder</div><div class="cdesc">Code, tools, automations. Best for bounties + micro-SaaS.</div></div>
+    <div class="classcard" data-class="analyst" onclick="pickClass('analyst')"><div class="cname">Analyst</div><div class="cdesc">Data, evals, measurement. Best for AI-eval gigs + analytics.</div></div>
+    <div class="classcard" data-class="creator" onclick="pickClass('creator')"><div class="cname">Creator</div><div class="cdesc">Content, templates, design. Best for digital products + content.</div></div>
+    <div class="classcard" data-class="operator" onclick="pickClass('operator')"><div class="cname">Operator</div><div class="cdesc">Ops, support, deployment. Best for support + FDE roles.</div></div>
+  </div>
+  <div id="classnote" style="color:var(--muted);font-size:13px"></div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" data-tab="tutorial" onclick="showTab('tutorial')">Tutorial Quest</div>
+  <div class="tab" data-tab="board" onclick="showTab('board')">Quest Board</div>
+  <div class="tab" data-tab="honor" onclick="showTab('honor')">Code of Honor</div>
+  <div class="tab" data-tab="inventory" onclick="showTab('inventory')">Inventory</div>
+  <div class="tab" data-tab="highrange" onclick="showTab('highrange')">High-Range Tier</div>
+</div>
+
+<!-- Tutorial -->
+<div class="panel active" id="panel-tutorial">
+  <div class="card">
+    <h2>Quest 0 — First Blood (Your First Dollar)</h2>
+    <p style="color:var(--muted)">Project tutorial first. Goal: ship one tiny paid deliverable in 7 days. Not a startup — a single useful thing someone pays $5–$29 for.</p>
+    <div class="codebox">DAY 1 — Pick the problem
+- List 5 tiny annoyances you or people you know have.
+- Pick one solvable in ~4 hours of work.
+- Validate: ask 3 people "would you pay $10 for X?" If 2+ say yes, proceed.
+
+DAY 2 — Build the MVP
+- Build the smallest version that delivers the promised value.
+- No polish yet. Working > pretty.
+
+DAY 3 — Package
+- README / instructions / demo (screenshot or 30s video).
+- Set price: $5 (impulse), $15 (fair), $29 (premium). Start low.
+
+DAY 4 — List
+- Gumroad (digital) OR Fiverr (service) OR Etsy (template).
+- Title = outcome, not feature. "Save 2 hours cleaning CSVs" not "CSV cleaner".
+
+DAY 5 — Share (value-first, no spam)
+- Post in 3 communities where your buyer lives (Discord, Reddit, X).
+- Lead with the problem + free tip; link at the end.
+
+DAY 6 — Iterate
+- If 0 buyers: talk to 3 non-buyers, find the objection, fix.
+- If 1+ buyers: ask for a testimonial + what almost stopped them.
+
+DAY 7 — Deliver & plan
+- Deliver, refund policy honored, thank-you note.
+- Decide: scale this, or run Quest 0 again on a new idea.</div>
+    <h3>Rules of Quest 0</h3>
+    <ul>
+      <li>Do NOT build for 3 weeks before showing anyone. Ship in 7 days max.</li>
+      <li>Do NOT add features nobody asked for.</li>
+      <li>Do NOT fake reviews or testimonials. Honor -20 per lie.</li>
+      <li>Do respond to every buyer within 24h.</li>
+    </ul>
+    <button class="btn" onclick="completeQuest('q0',50)">Mark Quest 0 Complete (+50 XP)</button>
+  </div>
+</div>
+
+<!-- Quest Board -->
+<div class="panel" id="panel-board">
+  <div class="card">
+    <h2>Quest Board</h2>
+    <p style="color:var(--muted);font-size:13px">Ranked by safety × speed × honesty. Click "Complete" when you've earned real money from a path.</p>
+    <div class="grid" id="quests"></div>
+  </div>
+</div>
+
+<!-- Honor -->
+<div class="panel" id="panel-honor">
+  <div class="card">
+    <h2>Code of Honor</h2>
+    <p style="color:var(--muted);font-size:13px">Break these and your Honor drops. Low Honor = no real reputation, no repeat buyers.</p>
+    <ul class="honor">
+      <li><b>No scams, no fake reviews, no fabricated testimonials.</b> Ever.</li>
+      <li><b>No plagiarized code/content.</b> Credit sources; license properly.</li>
+      <li><b>No exploitative labor</b> — don't resell underpaid work as your own premium service.</li>
+      <li><b>No deceptive claims</b> — don't promise results you can't deliver.</li>
+      <li><b>Transparent pricing</b> — no hidden fees, no dark patterns.</li>
+      <li><b>Honor refunds</b> — if it didn't work, refund. Reputation > one sale.</li>
+      <li><b>Pay your taxes</b> — track income from day one.</li>
+      <li><b>Protect user data</b> — especially if you handle any customer info (see secure-local-webapp principles).</li>
+      <li><b>Don't spam communities</b> — value first, link last.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Inventory -->
+<div class="panel" id="panel-inventory">
+  <div class="card">
+    <h2>Inventory (Skills Collected)</h2>
+    <div id="invlist" style="color:var(--muted);font-size:13px">Complete quests to collect skills.</div>
+  </div>
+</div>
+
+<!-- High-Range Tier -->
+<div class="panel" id="panel-highrange">
+  <div class="card">
+    <h2>High-Range Tier — Lowest Effort, Highest Ceiling</h2>
+    <p style="color:var(--muted);font-size:13px">Honest truth: "high income / low effort" is rare. These are the closest real paths. Effort is front-loaded; payoff is leveraged. Mark complete only after real revenue.</p>
+    <div class="grid" id="hquests"></div>
+  </div>
+</div>
+
+<div class="footer">WorkQuest — Honorably Fast · Progress saved in your browser (localStorage). No data leaves your machine.</div>
+</div>
+
+<script>
+const QUESTS = [
+ {id:'q1',name:'The Courier\u2019s Run',class:'analyst',diff:1,time:'Days',income:'$5\u2013$25/hr',risk:'Low',desc:'Data labeling & AI eval work (Outlier, Scale AI, Remotasks). Fastest first dollar, low ceiling.',
+  steps:['Sign up at 2\u20133 platforms (Outlier, Remotasks, Toloka).','Pass their qualification tests (usually 1\u20132 hrs).','Work 5\u201310 hrs/week; track hours & pay.','Graduate to higher-paying eval tasks as rating rises.'],
+  honor:'Legit work, but pay is low. Treat as runway, not a career. Don\u2019t fabricate qualifications.'},
+ {id:'q2',name:'The Bounty Hunt',class:'builder',diff:2,time:'Days\u2013Weeks',income:'$50\u2013$5,000/bounty',risk:'Low',desc:'Open-source bounties (Algora, Gitcoin, IssueHunt). Paid to fix real issues.',
+  steps:['Create accounts on Algora + Gitcoin.','Filter bounties by your stack; start with "good first issue".','Fork, fix, open PR referencing the bounty.','Claim payout after merge.'],
+  honor:'Only claim bounties you actually complete. Don\u2019t game PRs.'},
+ {id:'q3',name:'The Merchant\u2019s Stall',class:'creator',diff:2,time:'Weeks',income:'$5\u2013$200/sale (passive)',risk:'Low',desc:'Digital products & templates on Gumroad/Etsy. Build once, sell many.',
+  steps:['Pick a template/checklist/guide from Quest 0 that sold.','Polish + add 2 bonuses.','List on Gumroad with strong cover image.','Drive traffic via content + communities.'],
+  honor:'Original work only. Clear license terms.'},
+ {id:'q4',name:'The Freelancer\u2019s Contract',class:'operator',diff:2,time:'Days',income:'$20\u2013$200/gig',risk:'Low',desc:'Micro-services on Fiverr/Upwork. Fastest path to first paid client.',
+  steps:['Pick ONE service you can deliver in <1 day.','Create a gig with 3 packages (basic/standard/premium).','Deliver early + over-deliver on first 5 orders for reviews.','Raise prices after 10 five-star reviews.'],
+  honor:'Don\u2019t buy fake reviews. Don\u2019t overpromise turnaround.'},
+ {id:'q5',name:'The Scribe\u2019s Scroll',class:'creator',diff:2,time:'Months',income:'$0\u2013$10k+/mo',risk:'Low',desc:'Content + affiliate (blog/YouTube/TikTok). Slow start, high ceiling.',
+  steps:['Pick one platform + one niche you know.','Post 2x/week for 8 weeks before judging.','Add affiliate links only for tools you actually use.','Reinvest first earnings into better gear/tools.'],
+  honor:'Disclose affiliates. Don\u2019t shill junk.'},
+ {id:'q6',name:'The Consultant\u2019s Retainer',class:'operator',diff:4,time:'Weeks\u2013Months',income:'$500\u2013$5k+/client',risk:'Medium',desc:'B2B consulting. Higher ticket, needs credibility & case studies.',
+  steps:['Productize one outcome (e.g., "Hermes setup in 1 week").','Land 2 free/cheap case studies.','Package as fixed-price offer with clear scope.','Ask happy clients for referrals.'],
+  honor:'Scope creep kills. Write contracts. Refund if you miss SLA.'},
+ {id:'q7',name:'The Bug Hunter\u2019s Bounty',class:'builder',diff:5,time:'Variable',income:'$100\u2013$50k+',risk:'Medium',desc:'Security bug bounties (HackerOne, Bugcrowd). High skill, high reward.',
+  steps:['Learn OWASP Top 10 + web security basics.','Practice on HackTheBox / PortSwigger labs.','Start with VDP (no payout) to build skill, then paid programs.','Report responsibly; never exploit beyond proof-of-concept.'],
+  honor:'Responsible disclosure only. Never extort or leak.'},
+ {id:'q8',name:'The Local Quest',class:'operator',diff:1,time:'Same day',income:'$20\u2013$100/hr',risk:'Low',desc:'In-person services (tutoring, pet care, errands, tech help). Fastest cash, no skills.',
+  steps:['List 3 things neighbors pay for (tech help, tutoring, pet care).','Post in local groups / Nextdoor / community boards.','Deliver excellently; ask for referrals.','Raise rates as demand grows.'],
+  honor:'Show up on time. Charge fairly. Don\u2019t upsell unnecessary work.'}
+];
+
+const HQUESTS = [
+ {id:'h1',name:'The Premium Product',diff:3,time:'Weeks\u2013Months',income:'$99\u2013$499/sale',risk:'Low',desc:'One comprehensive template/system/course. Low marginal effort after build; high per-sale.',
+  steps:['Find a painful, specific niche (not "productivity" — "Notion CRM for freelancers").','Build the best version you can; include bonuses.','Price at $99+ (high price = fewer sales needed).','Launch to a warm list + communities; collect testimonials.'],
+  honor:'Deliver what you promise. Refund if it doesn\u2019t work.'},
+ {id:'h2',name:'The Affiliate Engine',diff:2,time:'Months',income:'30\u201350% recurring',risk:'Low',desc:'High-ticket SaaS affiliate. Write honest comparisons; earn recurring commissions.',
+  steps:['Pick 3 tools you actually use with affiliate programs.','Write comparison/review posts (SEO + community).','Disclose affiliates clearly.','Track which converts; double down on winners.'],
+  honor:'Only promote tools you\u2019d use yourself. No bait-and-switch.'},
+ {id:'h3',name:'The Productized Service',diff:3,time:'Weeks',income:'$500\u2013$2,000/client',risk:'Low',desc:'One fixed-scope, fixed-price service. Systematize delivery; raise price as demand grows.',
+  steps:['Define ONE outcome (e.g., "Hermes setup in 5 days").','Fixed price, fixed scope, written agreement.','Deliver in a documented, repeatable way.','Ask for referrals + case study.'],
+  honor:'Honor scope and SLA. Refund if you miss.'},
+ {id:'h4',name:'The Licensing Play',diff:4,time:'Months',income:'Royalties (passive)',risk:'Medium',desc:'License IP — music, templates, designs, patents — for ongoing royalties.',
+  steps:['Create original IP (music track, template pack, design).','Register/copyright where applicable.','List on licensing platforms (AudioJungle, Creative Market, etc.).','Collect royalties; reinvest into more IP.'],
+  honor:'Original IP only. Respect existing licenses.'},
+ {id:'h5',name:'The Audience Asset',diff:3,time:'Months',income:'$500\u2013$5k/sponsor',risk:'Low',desc:'Niche newsletter/podcast. Consistent weekly value; monetize via sponsors.',
+  steps:['Pick a niche you can write about weekly for a year.','Publish consistently; grow to ~1,000 engaged subscribers.','Sell sponsor slots (flat rate, disclosed).','Keep editorial independence.'],
+  honor:'Disclose sponsors. Never sell audience trust.'},
+ {id:'h6',name:'The Micro-SaaS',diff:4,time:'Months',income:'MRR ($9\u2013$29/mo)',risk:'Medium',desc:'Small paid tool with subscription. High effort upfront, recurring revenue.',
+  steps:['Find a recurring pain (something people do weekly).','Build MVP in 2 weeks; charge from day 1.','Launch on Product Hunt / HN / communities.','Iterate on churn reasons; keep it small.'],
+  honor:'Don\u2019t lock users in. Easy cancel. Honest pricing.'}
+];
+
+const INV = {
+ q0:['First shipped product','Pricing instinct','Community sharing'],
+ q1:['Annotation skill','Eval literacy','Patience XP'],
+ q2:['Git/GitHub fluency','PR discipline','Bounty claiming'],
+ q3:['Product packaging','Sales copy','Passive income'],
+ q4:['Client communication','Gig optimization','Review farming (honest)'],
+ q5:['Content consistency','Audience building','Affiliate ethics'],
+ q6:['Scoping','Consulting','Referral loops'],
+ q7:['Security mindset','Responsible disclosure','High-ticket payouts'],
+ q8:['Local networking','Service delivery','Referral loops'],
+ h1:['Niche selection','Premium pricing','Launch playbook'],
+ h2:['SEO basics','Affiliate ethics','Recurring revenue'],
+ h3:['Scoping','Fixed-price offers','Case studies'],
+ h4:['IP creation','Licensing','Royalties'],
+ h5:['Consistency','Audience building','Sponsor sales'],
+ h6:['MVP speed','Subscription billing','Churn analysis']
+ };
+
+let state = JSON.parse(localStorage.getItem('wq_state')||'{}');
+if(!state.xp) state={xp:0,level:1,honor:100,done:[],cls:null,inv:[]};
+
+function save(){localStorage.setItem('wq_state',JSON.stringify(state));render();}
+
+function xpForLevel(l){return l*100;}
+function addXP(n){state.xp+=n;while(state.xp>=xpForLevel(state.level)){state.xp-=xpForLevel(state.level);state.level++;}save();}
+function addHonor(n){state.honor=Math.max(0,Math.min(100,state.honor+n));save();}
+
+function pickClass(c){
+ state.cls=c;save();
+ const notes={builder:'Builder selected. Prioritize Bounty Hunt + Bug Hunter.',analyst:'Analyst selected. Prioritize Courier\u2019s Run + Product Analytics.',creator:'Creator selected. Prioritize Merchant\u2019s Stall + Scribe\u2019s Scroll.',operator:'Operator selected. Prioritize Freelancer + Consultant + Local Quest.'};
+ document.getElementById('classnote').textContent=notes[c];
+ document.querySelectorAll('.classcard').forEach(x=>x.classList.toggle('selected',x.dataset.class===c));
+}
+
+function showTab(t){
+ document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===t));
+ document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id==='panel-'+t));
+}
+
+function completeQuest(id,xp){
+ if(state.done.includes(id)) return;
+ state.done.push(id);
+ if(!state.inv) state.inv=[];
+ (INV[id]||[]).forEach(s=>{if(!state.inv.includes(s)) state.inv.push(s);});
+ addXP(xp);
+ addHonor(5);
+ save();
+}
+
+function resetProgress(){
+ if(!confirm('Reset all progress?')) return;
+ state={xp:0,level:1,honor:100,done:[],cls:null,inv:[]};
+ save();
+}
+
+function render(){
+ document.getElementById('level').textContent=state.level;
+ document.getElementById('xp').textContent=state.xp+' / '+xpForLevel(state.level);
+ document.getElementById('xpbar').style.width=(state.xp/xpForLevel(state.level)*100)+'%';
+ document.getElementById('honor').textContent=state.honor;
+ document.getElementById('honorbar').style.width=state.honor+'%';
+ document.getElementById('qdone').textContent=state.done.length;
+ if(state.cls){
+   document.querySelectorAll('.classcard').forEach(x=>x.classList.toggle('selected',x.dataset.class===state.cls));
+   const notes={builder:'Builder selected. Prioritize Bounty Hunt + Bug Hunter.',analyst:'Analyst selected. Prioritize Courier\u2019s Run + Product Analytics.',creator:'Creator selected. Prioritize Merchant\u2019s Stall + Scribe\u2019s Scroll.',operator:'Operator selected. Prioritize Freelancer + Consultant + Local Quest.'};
+   document.getElementById('classnote').textContent=notes[state.cls];
+ }
+ // quests
+ const box=document.getElementById('quests');
+ box.innerHTML='';
+ QUESTS.forEach(q=>{
+   const done=state.done.includes(q.id);
+   const fit = state.cls && q.class===state.cls ? '<span class="chip green">Your class</span>' : '';
+   const d=document.createElement('div');
+   d.className='card quest'+(done?' done':'');
+   d.innerHTML=`
+     <div class="head">
+       <div><div class="title">${q.name} ${done?'✓':''}</div>
+       <div class="meta">${q.desc}</div></div>
+       ${fit}
+     </div>
+     <div style="margin:6px 0">
+       <span class="chip">Diff ${q.diff}/5</span>
+       <span class="chip gold">${q.time}</span>
+       <span class="chip blue">${q.income}</span>
+       <span class="chip ${q.risk==='Low'?'green':'red'}">Risk: ${q.risk}</span>
+     </div>
+     <h3>Steps</h3>
+     <ul>${q.steps.map(s=>'<li>'+s+'</li>').join('')}</ul>
+     <div style="color:var(--muted);font-size:12px"><b>Honor note:</b> ${q.honor}</div>
+     <div class="reward">Reward: +${q.diff*25+25} XP on completion</div>
+     <button class="btn ${done?'secondary':''}" onclick="completeQuest('${q.id}',${q.diff*25+25})" ${done?'disabled':''}>${done?'Completed':'Mark Complete'}</button>
+   `;
+   box.appendChild(d);
+ });
+ // hquests
+ const hbox=document.getElementById('hquests');
+ if(hbox){
+   hbox.innerHTML='';
+   HQUESTS.forEach(q=>{
+     const done=state.done.includes(q.id);
+     const d=document.createElement('div');
+     d.className='card quest'+(done?' done':'');
+     d.innerHTML=`
+       <div class="head">
+         <div><div class="title">${q.name} ${done?'✓':''}</div>
+         <div class="meta">${q.desc}</div></div>
+       </div>
+       <div style="margin:6px 0">
+         <span class="chip">Diff ${q.diff}/5</span>
+         <span class="chip gold">${q.time}</span>
+         <span class="chip blue">${q.income}</span>
+         <span class="chip ${q.risk==='Low'?'green':'red'}">Risk: ${q.risk}</span>
+       </div>
+       <h3>Steps</h3>
+       <ul>${q.steps.map(s=>'<li>'+s+'</li>').join('')}</ul>
+       <div style="color:var(--muted);font-size:12px"><b>Honor note:</b> ${q.honor}</div>
+       <div class="reward">Reward: +${q.diff*25+25} XP on completion</div>
+       <button class="btn ${done?'secondary':''}" onclick="completeQuest('${q.id}',${q.diff*25+25})" ${done?'disabled':''}>${done?'Completed':'Mark Complete'}</button>
+     `;
+     hbox.appendChild(d);
+   });
+ }
+ // inventory
+ const inv=document.getElementById('invlist');
+ if(state.inv && state.inv.length){
+   inv.innerHTML='<ul>'+state.inv.map(s=>'<li>'+s+'</li>').join('')+'</ul>';
+ } else {
+   inv.textContent='Complete quests to collect skills.';
+ }
+}
+
+render();
+</script>
+</body>
+</html>
